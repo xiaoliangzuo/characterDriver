@@ -9,7 +9,7 @@
 #include <asm/io.h>
 #include <asm/uaccess.h>
 
-#define GLOBALMEM_SIZE 500
+#define GLOBALMEM_SIZE 50000
 #define MEMCLEAR 0X1
 
 /*the devices major 254 */
@@ -23,7 +23,7 @@ typedef struct globalmem_dev{
 } GLOBALDEV;
 
 static GLOBALDEV dev;
-
+static atomic_t atomic_available = ATOMIC_INIT(1);
 
 static ssize_t globaldev_read(struct file *filp, char __user *buf, size_t count, loff_t *opps)
 {
@@ -32,7 +32,7 @@ static ssize_t globaldev_read(struct file *filp, char __user *buf, size_t count,
 	{
 //		printk(KERN_INFO "ERROR %d is more than the memory", p);
 
-		return -EFAULT;
+//		return -EFAULT;
 	}
 	if(copy_to_user(buf, (void*)(dev.memory + p), count))
 	{
@@ -41,7 +41,7 @@ static ssize_t globaldev_read(struct file *filp, char __user *buf, size_t count,
 	else
 	{
 		*opps += count ;
-//		printk(KERN_INFO "read %d bytes from %d", count, p);
+		printk(KERN_INFO "read %d bytes from %d", count, p);
 		return count;
 	}
 	
@@ -64,7 +64,7 @@ static ssize_t globaldev_write(struct file *filp, char __user *buf, size_t count
 	else
 	{
 		*opps += count ;
-//		printk(KERN_INFO "read %d bytes from %d", count, p);
+		printk(KERN_INFO "write %d bytes from %d", count, p);
 		return count;
 	}
 	
@@ -73,11 +73,18 @@ static ssize_t globaldev_write(struct file *filp, char __user *buf, size_t count
 
 static int globaldev_open(struct inode* inode,struct file *filp)
 {
+	if(!atomic_dec_and_test(&atomic_available))
+	{
+		atomic_inc(&atomic_available);
+		printk(KERN_INFO"DEVICE IS USED ,OPEN ERROR\N");
+		return -EBUSY;
+	}
 	return 0;
 }
 
 static int globaldev_release(struct inode* inode,struct file *filp)
 {
+	atomic_inc(&atomic_available);
 	return 0;
 }
 
