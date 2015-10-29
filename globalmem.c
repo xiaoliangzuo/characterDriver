@@ -103,6 +103,12 @@ static int globaldev_llseek(struct file *filp, loff_t offset, int orig)
 }
 
 
+static int globaldev_flush (struct file *filp)
+{
+	printk(KERN_INFO"TEST FOR Flush\n");
+	return 0;
+}
+
 
 static const struct file_operations globaldev_ops ={
 	.owner  = THIS_MODULE,
@@ -112,6 +118,7 @@ static const struct file_operations globaldev_ops ={
 	.write  = globaldev_write,
 /*	.ioctl  = globaldev_ioctl,*/
 	.release= globaldev_release,
+	.flush  = globaldev_flush,
 };
 
 int globaldev_init(void)
